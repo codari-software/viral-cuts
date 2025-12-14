@@ -2,12 +2,11 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+import os from 'os';
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        if (!fs.existsSync('temp/')) {
-            fs.mkdirSync('temp/');
-        }
-        cb(null, 'temp/');
+        cb(null, os.tmpdir());
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
