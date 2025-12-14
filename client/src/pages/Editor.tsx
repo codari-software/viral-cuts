@@ -38,7 +38,7 @@ export default function Editor() {
             loadProject();
             // Poll for updates if processing
             const interval = setInterval(() => {
-                if (project?.status === 'processing') {
+                if (project?.status === 'processing' || isProcessing) {
                     loadProject();
                 }
             }, 2000);
@@ -46,7 +46,15 @@ export default function Editor() {
         } else {
             setIsLoading(false);
         }
-    }, [projectId, project?.status]);
+    }, [projectId, project?.status, isProcessing]);
+
+    // Handle Failure
+    useEffect(() => {
+        if (project?.status === 'failed') {
+            setIsProcessing(false);
+            toast.error('O processamento falhou. Tente novamente ou verifique se o vídeo é válido.');
+        }
+    }, [project?.status]);
 
     const loadProject = async () => {
         try {
@@ -98,8 +106,16 @@ export default function Editor() {
             }
 
             toast.info(`Processamento iniciado! Isso pode levar alguns minutos.`);
+
+            // Optimistically update status to ensure polling continues
+            setProject((prev: any) => ({
+                ...prev,
+                status: 'processing',
+                processingProgress: 0
+            }));
+
             // Reload project to see processing status
-            setTimeout(() => loadProject(), 500);
+            setTimeout(() => loadProject(), 1000);
         } catch (error: any) {
             console.error(error);
             toast.error(error.response?.data?.error || 'Falha no processamento');

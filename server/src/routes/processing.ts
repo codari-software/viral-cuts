@@ -29,6 +29,9 @@ router.post('/auto-silence/:projectId', async (req: AuthRequest, res: Response):
             return;
         }
 
+        // Update status immediately to prevent race condition
+        await projectModel.update(req.params.projectId, { status: 'processing', processingProgress: 0 });
+
         // Start processing in background
         ffmpegProcessor.removeSilence(req.params.projectId).catch(console.error);
 
@@ -62,6 +65,9 @@ router.post('/speed/:projectId', async (req: AuthRequest, res: Response): Promis
         const { speed } = req.body;
         const speedValue = speed ? parseFloat(speed) : 1.25;
 
+        // Update status immediately to prevent race condition
+        await projectModel.update(req.params.projectId, { status: 'processing', processingProgress: 0 });
+
         // Start processing in background
         ffmpegProcessor.changeSpeed(req.params.projectId, speedValue).catch(console.error);
 
@@ -91,6 +97,9 @@ router.post('/crop-9-16/:projectId', async (req: AuthRequest, res: Response): Pr
             res.status(400).json({ error: 'No video uploaded for this project' });
             return;
         }
+
+        // Update status immediately to prevent race condition
+        await projectModel.update(req.params.projectId, { status: 'processing', processingProgress: 0 });
 
         // Start processing in background
         ffmpegProcessor.cropTo916(req.params.projectId).catch(console.error);

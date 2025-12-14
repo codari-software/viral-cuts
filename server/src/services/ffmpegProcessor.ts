@@ -129,15 +129,16 @@ export class FFmpegProcessor {
                     this.cleanup([inputPath, outputPath]);
                     reject(err);
                 })
-                .audioFilters([
-                    'silenceremove=stop_periods=-1:stop_duration=0.5:stop_threshold=-30dB'
-                ])
+                // .audioFilters([
+                //     'silenceremove=stop_periods=-1:stop_duration=0.5:stop_threshold=-30dB'
+                // ])
                 .outputOptions([
                     '-c:v libx264',
                     '-crf 23',
                     '-preset medium',
                     '-movflags +faststart',
-                    '-vf scale=-2:720' // Ensure at least 720p height if possible, or maintain aspect
+                    '-vf scale=-2:720', // Ensure at least 720p height if possible, or maintain aspect
+                    '-pix_fmt yuv420p'
                 ])
                 .output(outputPath)
                 .run();
@@ -183,8 +184,14 @@ export class FFmpegProcessor {
                     cropWidth = Math.floor(inputHeight * targetRatio);
                 }
 
+                // Ensure even dimensions for yuv420p
+                cropWidth = Math.floor(cropWidth / 2) * 2;
+                cropHeight = Math.floor(cropHeight / 2) * 2;
+
                 const cropX = Math.floor((inputWidth - cropWidth) / 2);
                 const cropY = Math.floor((inputHeight - cropHeight) / 2);
+
+                console.log(`🎥 Cropping project ${projectId}: Input ${inputWidth}x${inputHeight} -> Output ${cropWidth}x${cropHeight} at (${cropX},${cropY})`);
 
                 ffmpeg(inputPath)
                     .on('start', () => {
@@ -208,10 +215,13 @@ export class FFmpegProcessor {
                                 this.cleanup([inputPath, outputPath]);
                                 resolve(result.secure_url);
                             })
-                            .catch(err => reject(err));
+                            .catch(err => {
+                                console.error('Cloudinary upload error in crop:', err);
+                                reject(err)
+                            });
                     })
                     .on('error', async (err) => {
-                        console.error('FFmpeg error:', err);
+                        console.error('FFmpeg error in crop:', err);
                         await projectModel.update(projectId, { status: 'failed' });
                         this.cleanup([inputPath, outputPath]);
                         reject(err);
@@ -221,7 +231,8 @@ export class FFmpegProcessor {
                         '-c:v libx264',
                         '-crf 23',
                         '-preset medium',
-                        '-movflags +faststart'
+                        '-movflags +faststart',
+                        '-pix_fmt yuv420p'
                     ])
                     .output(outputPath)
                     .run();
@@ -283,7 +294,8 @@ export class FFmpegProcessor {
                     '-c:v libx264',
                     '-crf 23',
                     '-preset medium',
-                    '-movflags +faststart'
+                    '-movflags +faststart',
+                    '-pix_fmt yuv420p'
                 ])
                 .output(outputPath)
                 .run();
