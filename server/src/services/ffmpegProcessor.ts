@@ -6,6 +6,7 @@ import fs from 'fs';
 import os from 'os';
 
 // Third Party Modules
+import axios from 'axios';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
 import { path as ffprobePath } from 'ffprobe-static';
@@ -33,30 +34,41 @@ export class FFmpegProcessor {
     /**
      * Download file from URL to temp path
      */
+    /**
+     * Download file from URL to temp path
+     */
     private async downloadToTemp(url: string, projectId: string): Promise<string> {
-        // Ensure temp dir exists (os.tmpdir always exists)
-
         const tempPath = path.join(os.tmpdir(), `${projectId}-input-${Date.now()}.mp4`);
+        const writer = fs.createWriteStream(tempPath);
 
-        // Use Cloudinary URL directly since standard fetch/axios works for public/signed URLs
-        // Note: For signed URLs we might need axios, but let's assume secure_url is accessible
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to download video: ${response.statusText}`);
+        try {
+            const response = await axios({
+                url,
+                method: 'GET',
+                responseType: 'stream'
+            });
 
-        const fileStream = fs.createWriteStream(tempPath);
-        // @ts-ignore - ReadableStream/Node stream mismatch workaround
-        const reader = response.body.getReader();
+            await new Promise((resolve, reject) => {
+                const stream = response.data;
+                stream.on('error', (err: Error) => {
+                    writer.close();
+                    reject(err);
+                });
+                writer.on('error', (err: Error) => {
+                    writer.close();
+                    reject(err);
+                });
+                writer.on('finish', () => {
+                    resolve(true);
+                });
+                stream.pipe(writer);
+            });
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fileStream.write(value);
+            return tempPath;
+        } catch (error) {
+            console.error('Download error:', error);
+            throw new Error(`Failed to download video: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-        fileStream.end();
-
-        return new Promise((resolve) => {
-            fileStream.on('finish', () => resolve(tempPath));
-        });
     }
 
     private async cleanup(paths: string[]) {
