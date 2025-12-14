@@ -137,9 +137,12 @@ router.get('/upload-signature', async (req: AuthRequest, res: Response): Promise
             cloudName: process.env.CLOUDINARY_CLOUD_NAME,
             apiKey: process.env.CLOUDINARY_API_KEY
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Signature generation error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({
+            error: `Signature generation failed: ${error.message || error}`,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
