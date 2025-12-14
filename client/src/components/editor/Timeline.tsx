@@ -17,7 +17,7 @@ export function Timeline({ currentTime, duration, onSeek }: TimelineProps) {
     };
 
     // Zoom level (pixels per second)
-    const PIXELS_PER_SECOND = 20;
+
 
     // Generate ruler ticks (every 5 seconds)
     const ticks: number[] = [];

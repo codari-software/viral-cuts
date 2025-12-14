@@ -4,9 +4,9 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
-import { Plus, Play, Trash2, Search, Filter } from "lucide-react";
+import { Plus, Play, Trash2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { Link } from "react-router-dom";
+
 import { useProjects } from "../hooks/useProjects";
 import { useNavigate } from "react-router-dom";
 

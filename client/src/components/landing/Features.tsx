@@ -1,5 +1,5 @@
 // React import removed
-import { Upload, Wand2, Share2, Type, Crop, TrendingUp, Rocket } from 'lucide-react';
+import { Upload, Wand2, Share2, Crop, TrendingUp, Rocket } from 'lucide-react';
 
 const features = [
     {
