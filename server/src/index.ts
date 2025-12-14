@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import connectDB from './config/db';
@@ -28,7 +29,24 @@ app.use('/outputs', express.static(path.join(__dirname, '../outputs')));
 
 // Health Check
 app.get('/api/health', (req: Request, res: Response) => {
-    res.json({ status: 'ok', server: 'ViralCuts Backend', timestamp: new Date() });
+    const dbStatus = mongoose.connection.readyState;
+    const statusMap = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting',
+        99: 'uninitialized'
+    };
+    res.json({
+        status: 'ok',
+        server: 'ViralCuts Backend',
+        timestamp: new Date(),
+        dbState: statusMap[dbStatus] || dbStatus,
+        params: {
+            hasMongoUri: !!process.env.MONGO_URI,
+            nodeEnv: process.env.NODE_ENV
+        }
+    });
 });
 
 // Routes

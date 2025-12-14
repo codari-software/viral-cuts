@@ -2,7 +2,12 @@ import mongoose from 'mongoose';
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGO_URI || '', {
+        const uri = process.env.MONGO_URI;
+        if (!uri) {
+            console.error('❌ MONGODB ERROR: MONGO_URI environment variable is not defined!');
+            return;
+        }
+        const conn = await mongoose.connect(uri, {
             // These are no longer needed in Mongoose 6+, but good for older versions awareness
             // useNewUrlParser: true,
             // useUnifiedTopology: true,
