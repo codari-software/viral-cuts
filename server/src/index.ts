@@ -22,14 +22,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Ensure DB is connected for every request
-app.use(dbCheck);
-
-// Serve static files (processed videos)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/outputs', express.static(path.join(__dirname, '../outputs')));
-
-// Health Check
+// Health Check - MOVED BEFORE DB CHECK
 app.get('/api/health', (req: Request, res: Response) => {
     const dbStatus = mongoose.connection.readyState;
     const statusMap = {
@@ -39,18 +32,40 @@ app.get('/api/health', (req: Request, res: Response) => {
         3: 'disconnecting',
         99: 'uninitialized'
     };
+
+    // Check optional dependencies
+    const hasCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+    
+    // Check FFmpeg
+    let ffmpegStatus = 'unknown';
+    try {
+        const ffmpegPath = require('ffmpeg-static');
+        ffmpegStatus = ffmpegPath ? 'found' : 'missing';
+    } catch (e) {
+        ffmpegStatus = 'error_loading';
+    }
+
     res.json({
         status: 'ok',
         server: 'ViralCuts Backend',
         timestamp: new Date(),
         dbState: statusMap[dbStatus] || dbStatus,
         lastError: dbError,
-        params: {
+        environment: {
+            nodeEnv: process.env.NODE_ENV,
             hasMongoUri: !!process.env.MONGO_URI,
-            nodeEnv: process.env.NODE_ENV
+            hasCloudinary,
+            ffmpegStatus
         }
     });
 });
+
+// Ensure DB is connected for every request AFTER health check
+app.use(dbCheck);
+
+// Serve static files (processed videos)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/outputs', express.static(path.join(__dirname, '../outputs')));
 
 // Routes
 app.use('/api/auth', authRoutes);
