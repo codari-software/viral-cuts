@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import connectDB, { dbError } from './config/db';
+import { dbCheck } from './middleware/dbCheck';
 
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
@@ -15,14 +16,14 @@ import adminRoutes from './routes/admin';
 import { adminAuth } from './middleware/adminAuth';
 import webhookRoutes from './routes/webhooks';
 
-// Connect to MongoDB
-connectDB();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Ensure DB is connected for every request
+app.use(dbCheck);
 
 // Serve static files (processed videos)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
