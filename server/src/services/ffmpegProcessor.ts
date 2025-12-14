@@ -1,22 +1,31 @@
-import ffmpeg from 'fluent-ffmpeg';
-// Imports removed to use dynamic require
-// import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-// import ffprobeInstaller from '@ffprobe-installer/ffprobe';
+
+
+// Core Modules
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+
+// Third Party Modules
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from 'ffmpeg-static';
+import { path as ffprobePath } from 'ffprobe-static';
+
 import { projectModel } from '../models/Project';
 import { cloudinaryService } from './cloudinary';
 
-// Set FFmpeg and FFprobe paths
-// Set FFmpeg and FFprobe paths safely
-try {
-    const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-    const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
-    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-    ffmpeg.setFfprobePath(ffprobeInstaller.path);
-} catch (e) {
-    console.warn('⚠️ FFmpeg binaries not found. Video processing will fail, but API is up.', e);
+// Configure FFmpeg
+if (ffmpegPath) {
+    ffmpeg.setFfmpegPath(ffmpegPath);
+    console.log(`✅ FFmpeg path set to: ${ffmpegPath}`);
+} else {
+    console.error('❌ FFmpeg binary not found in ffmpeg-static!');
+}
+
+if (ffprobePath) {
+    ffmpeg.setFfprobePath(ffprobePath);
+    console.log(`✅ FFprobe path set to: ${ffprobePath}`);
+} else {
+    console.error('❌ FFprobe binary not found in ffprobe-static!');
 }
 
 export class FFmpegProcessor {
