@@ -75,7 +75,7 @@ router.post('/', checkShortsLimit, async (req: AuthRequest, res: Response): Prom
     }
 });
 
-// Upload video to project
+// Upload video to project (Legacy - kept for small files if needed, but client-side is preferred)
 router.post('/:id/upload', upload.single('video'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const project = await projectModel.findById(req.params.id);
@@ -121,6 +121,69 @@ router.post('/:id/upload', upload.single('video'), async (req: AuthRequest, res:
     } catch (error) {
         console.error('Upload error:', error);
         if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) { } // Try to cleanup
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Generate Cloudinary Upload Signature
+router.get('/upload-signature', async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const timestamp = Math.round((new Date).getTime() / 1000);
+        const signature = cloudinaryService.generateSignature(timestamp);
+
+        res.json({
+            timestamp,
+            signature,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            apiKey: process.env.CLOUDINARY_API_KEY
+        });
+    } catch (error) {
+        console.error('Signature generation error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Confirm Client-Side Upload
+router.post('/:id/confirm-upload', async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const project = await projectModel.findById(req.params.id);
+
+        if (!project) {
+            res.status(404).json({ error: 'Project not found' });
+            return;
+        }
+
+        // Check ownership
+        if (project.userId !== req.userId) {
+            res.status(403).json({ error: 'Forbidden' });
+            return;
+        }
+
+        const { videoUrl, videoPath, duration } = req.body;
+
+        if (!videoUrl || !videoPath) {
+            res.status(400).json({ error: 'Missing video details' });
+            return;
+        }
+
+        // Format duration if it comes as seconds (number)
+        let formattedDuration = duration;
+        if (typeof duration === 'number') {
+            const minutes = Math.floor(duration / 60);
+            const seconds = Math.floor(duration % 60);
+            formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        const updated = await projectModel.update(req.params.id, {
+            videoPath,
+            videoUrl,
+            duration: formattedDuration,
+            status: 'draft' // Reset to draft so they can process it
+        });
+
+        res.json(updated);
+    } catch (error) {
+        console.error('Confirm upload error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import axios from 'axios';
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { Upload as UploadIcon } from "lucide-react";
@@ -74,17 +75,41 @@ export default function Editor() {
 
         setIsUploading(true);
         try {
-            await projectsAPI.uploadVideo(projectId, file, (progress) => {
-                setUploadProgress(progress);
-            }).then(response => {
-                setProject(response.data);
+            // 1. Get Signature
+            const { data: signData } = await projectsAPI.getUploadSignature();
+
+            // 2. Upload directly to Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('api_key', signData.apiKey);
+            formData.append('timestamp', signData.timestamp);
+            formData.append('signature', signData.signature);
+            formData.append('folder', 'viralcuts/raw');
+
+            const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/video/upload`;
+
+            const { data: uploadResult } = await axios.post(cloudinaryUrl, formData, {
+                onUploadProgress: (progressEvent) => {
+                    const total = progressEvent.total || file.size;
+                    const progress = Math.round((progressEvent.loaded * 100) / total);
+                    setUploadProgress(progress);
+                }
             });
 
+            // 3. Confirm to Backend
+            const { data: updatedProject } = await projectsAPI.confirmUpload(projectId, {
+                videoUrl: uploadResult.secure_url,
+                videoPath: uploadResult.public_id,
+                duration: uploadResult.duration
+            });
+
+            setProject(updatedProject);
             setShowUpload(false);
             toast.success('Vídeo enviado com sucesso!');
         } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.error || 'Falha no envio');
+            console.error('Upload failed:', error);
+            const msg = error.response?.data?.error?.message || error.response?.data?.error || 'Falha no envio';
+            toast.error(`Erro no upload: ${msg}`);
         } finally {
             setIsUploading(false);
             setUploadProgress(0);

@@ -68,6 +68,12 @@ export const projectsAPI = {
             },
         });
     },
+
+    // New methods for Client-Side Upload
+    getUploadSignature: () => api.get('/projects/upload-signature'),
+
+    confirmUpload: (id: string, data: { videoUrl: string; videoPath: string; duration: number }) =>
+        api.post(`/projects/${id}/confirm-upload`, data),
 };
 
 // Admin API

@@ -59,11 +59,25 @@ export class CloudinaryService {
      * Get a secure URL for a resource
      * @param publicId Cloudinary Public ID
      */
+    /**
+     * Get a secure URL for a resource
+     * @param publicId Cloudinary Public ID
+     */
     getResourceUrl(publicId: string): string {
         return cloudinary.url(publicId, {
             resource_type: 'video',
             secure: true
         });
+    }
+
+    /**
+     * Generate signature for client-side uploads
+     */
+    generateSignature(timestamp: number): string {
+        return cloudinary.utils.api_sign_request(
+            { timestamp, folder: 'viralcuts/raw' }, // Must match the params sent by client
+            process.env.CLOUDINARY_API_SECRET!
+        );
     }
 }
 
