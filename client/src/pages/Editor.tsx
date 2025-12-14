@@ -76,9 +76,11 @@ export default function Editor() {
         setIsUploading(true);
         try {
             // 1. Get Signature
+            console.log('Step 1: Getting upload signature');
             const { data: signData } = await projectsAPI.getUploadSignature();
 
             // 2. Upload directly to Cloudinary
+            console.log('Step 2: Uploading to Cloudinary');
             const formData = new FormData();
             formData.append('file', file);
             formData.append('api_key', signData.apiKey);
@@ -88,15 +90,23 @@ export default function Editor() {
 
             const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/video/upload`;
 
-            const { data: uploadResult } = await axios.post(cloudinaryUrl, formData, {
-                onUploadProgress: (progressEvent) => {
-                    const total = progressEvent.total || file.size;
-                    const progress = Math.round((progressEvent.loaded * 100) / total);
-                    setUploadProgress(progress);
-                }
-            });
+            let uploadResult;
+            try {
+                const res = await axios.post(cloudinaryUrl, formData, {
+                    onUploadProgress: (progressEvent) => {
+                        const total = progressEvent.total || file.size;
+                        const progress = Math.round((progressEvent.loaded * 100) / total);
+                        setUploadProgress(progress);
+                    }
+                });
+                uploadResult = res.data;
+            } catch (cloudErr: any) {
+                console.error('Cloudinary direct upload failed:', cloudErr);
+                throw new Error(`Falha no envio para Cloudinary: ${cloudErr.message}`);
+            }
 
             // 3. Confirm to Backend
+            console.log('Step 3: Confirming upload to backend');
             const { data: updatedProject } = await projectsAPI.confirmUpload(projectId, {
                 videoUrl: uploadResult.secure_url,
                 videoPath: uploadResult.public_id,
@@ -107,8 +117,8 @@ export default function Editor() {
             setShowUpload(false);
             toast.success('Vídeo enviado com sucesso!');
         } catch (error: any) {
-            console.error('Upload failed:', error);
-            const msg = error.response?.data?.error?.message || error.response?.data?.error || 'Falha no envio';
+            console.error('Upload process failed:', error);
+            const msg = error.response?.data?.error?.message || error.response?.data?.error || error.message || 'Falha no envio';
             toast.error(`Erro no upload: ${msg}`);
         } finally {
             setIsUploading(false);
