@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import axios from 'axios';
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
@@ -8,6 +8,7 @@ import { Modal } from "../components/ui/Modal";
 import { VideoUpload } from "../components/VideoUpload";
 import { Timeline } from "../components/editor/Timeline";
 import { VideoControls } from "../components/editor/VideoControls";
+import { ClipsGrid } from "../components/editor/ClipsGrid";
 import { projectsAPI, processingAPI } from "../lib/api";
 
 const API_BASE = 'http://localhost:3000';
@@ -254,6 +255,22 @@ export default function Editor() {
             }
         }
     };
+
+    const handlePreviewClip = useCallback(async (startTime: number, duration: number, index: number) => {
+        const clipData = { startTime, duration, index };
+        setSelectedClip(clipData);
+        setIsPreviewLoading(true);
+        try {
+            const response = await processingAPI.trim(projectId!, startTime, duration);
+            setPreviewUrl(response.data.videoUrl);
+        } catch (err) {
+            console.error(err);
+            toast.error('Erro ao gerar preview');
+            setSelectedClip(null);
+        } finally {
+            setIsPreviewLoading(false);
+        }
+    }, [projectId]);
 
     if (isLoading) {
         return <div className="text-white">Carregando...</div>;
@@ -502,57 +519,12 @@ export default function Editor() {
 
                         {/* Viral Clips Section */}
                         {hasVideo && duration > 0 && (
-                            <div className="bg-card border border-border rounded-xl p-6">
-                                <h3 className="font-bold text-foreground mb-4">Cortes Virais</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                    {Array.from({ length: project?.numberOfClips || 10 }).map((_, i) => {
-                                        const clipDuration = Math.floor(duration / 10);
-                                        const startTime = i * clipDuration;
-                                        return (
-                                            <div key={i} className="bg-surface rounded-lg p-3 border border-border flex flex-col gap-3 group hover:border-primary/50 transition-colors">
-                                                <div className="aspect-video bg-black/50 rounded flex items-center justify-center text-xs text-muted-foreground relative overflow-hidden">
-                                                    {videoUrl && (
-                                                        <video
-                                                            src={`${videoUrl}#t=${startTime},${startTime + clipDuration}`}
-                                                            className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity"
-                                                            preload="metadata"
-                                                        />
-                                                    )}
-                                                    <span className="absolute inset-0 flex items-center justify-center font-mono font-bold text-white drop-shadow-md">
-                                                        Corte {i + 1}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                    <span>{Math.floor(startTime / 60)}:{Math.floor(startTime % 60).toString().padStart(2, '0')} - {Math.floor((startTime + clipDuration) / 60)}:{Math.floor((startTime + clipDuration) % 60).toString().padStart(2, '0')}</span>
-                                                    <span>{Math.floor(clipDuration)}s</span>
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    className="w-full"
-                                                    onClick={async () => {
-                                                        const clipData = { startTime, duration: clipDuration, index: i };
-                                                        setSelectedClip(clipData);
-                                                        setIsPreviewLoading(true);
-                                                        try {
-                                                            const response = await processingAPI.trim(projectId!, startTime, clipDuration);
-                                                            setPreviewUrl(response.data.videoUrl);
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                            toast.error('Erro ao gerar preview');
-                                                            setSelectedClip(null);
-                                                        } finally {
-                                                            setIsPreviewLoading(false);
-                                                        }
-                                                    }}
-                                                >
-                                                    Visualizar
-                                                </Button>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            <ClipsGrid
+                                numberOfClips={project?.numberOfClips || 10}
+                                duration={duration}
+                                videoUrl={videoUrl}
+                                onPreview={handlePreviewClip}
+                            />
                         )}
                     </div>
                 </>
