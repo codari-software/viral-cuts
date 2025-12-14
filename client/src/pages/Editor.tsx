@@ -133,6 +133,9 @@ export default function Editor() {
         setIsProcessing(true);
 
         try {
+            // Immediate feedback
+            toast.info('Conectando ao servidor (pode demorar no frio)...', { autoClose: 2000 });
+
             if (type === 'auto-silence') {
                 await processingAPI.autoSilence(projectId);
             } else if (type === 'speed') {
@@ -141,9 +144,9 @@ export default function Editor() {
                 await processingAPI.crop916(projectId);
             }
 
-            toast.info(`Processamento iniciado! Isso pode levar alguns minutos.`);
+            toast.success(`Processamento iniciado!`);
 
-            // Optimistically update status to ensure polling continues
+            // Optimistically update status
             setProject((prev: any) => ({
                 ...prev,
                 status: 'processing',
@@ -155,7 +158,10 @@ export default function Editor() {
         } catch (error: any) {
             console.error(error);
             toast.error(error.response?.data?.error || 'Falha no processamento');
+            setIsProcessing(false); // Only reset on error, otherwise keep processing state until reload
         } finally {
+            // Remove setIsProcessing(false) from finally to prevent button flicker if we want to keep it disabled during "processing" status
+            // But we actually want to re-enable them if the status is 'processing' (handled by disabled prop logic)
             setIsProcessing(false);
         }
     };
