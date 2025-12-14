@@ -1,6 +1,7 @@
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import ffprobeInstaller from '@ffprobe-installer/ffprobe';
+// Imports removed to use dynamic require
+// import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+// import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -8,8 +9,15 @@ import { projectModel } from '../models/Project';
 import { cloudinaryService } from './cloudinary';
 
 // Set FFmpeg and FFprobe paths
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-ffmpeg.setFfprobePath(ffprobeInstaller.path);
+// Set FFmpeg and FFprobe paths safely
+try {
+    const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+    const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    ffmpeg.setFfprobePath(ffprobeInstaller.path);
+} catch (e) {
+    console.warn('⚠️ FFmpeg binaries not found. Video processing will fail, but API is up.', e);
+}
 
 export class FFmpegProcessor {
 

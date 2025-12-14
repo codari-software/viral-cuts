@@ -22,7 +22,8 @@ export default function Login() {
             await login(email, password);
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Login failed');
+            const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Login failed';
+            setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
         } finally {
             setIsLoading(false);
         }
