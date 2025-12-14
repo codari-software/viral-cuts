@@ -5,7 +5,8 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
-import connectDB from './config/db';
+import connectDB, { dbError } from './config/db';
+
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import processingRoutes from './routes/processing';
@@ -42,6 +43,7 @@ app.get('/api/health', (req: Request, res: Response) => {
         server: 'ViralCuts Backend',
         timestamp: new Date(),
         dbState: statusMap[dbStatus] || dbStatus,
+        lastError: dbError,
         params: {
             hasMongoUri: !!process.env.MONGO_URI,
             nodeEnv: process.env.NODE_ENV
