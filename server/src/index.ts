@@ -23,8 +23,22 @@ app.use(cors());
 app.use(express.json());
 
 // Health Check - MOVED BEFORE DB CHECK
-app.get('/api/health', (req: Request, res: Response) => {
-    const dbStatus = mongoose.connection.readyState;
+app.get('/api/health', async (req: Request, res: Response) => {
+    let connectionAttemptError = null;
+    let dbStatus = mongoose.connection.readyState;
+
+    // Active connection attempt if not connected
+    if (dbStatus !== 1) {
+        try {
+            console.log('Health check: Attempting active DB connection...');
+            await connectDB();
+            dbStatus = mongoose.connection.readyState; // Update status after connect
+        } catch (e) {
+            console.error('Health check: DB Connection failed', e);
+            connectionAttemptError = e instanceof Error ? e.message : String(e);
+        }
+    }
+
     const statusMap = {
         0: 'disconnected',
         1: 'connected',
@@ -35,7 +49,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
     // Check optional dependencies
     const hasCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
-    
+
     // Check FFmpeg
     let ffmpegStatus = 'unknown';
     try {
@@ -50,6 +64,7 @@ app.get('/api/health', (req: Request, res: Response) => {
         server: 'ViralCuts Backend',
         timestamp: new Date(),
         dbState: statusMap[dbStatus] || dbStatus,
+        connectionAttemptError, // <--- New field with specific error
         lastError: dbError,
         environment: {
             nodeEnv: process.env.NODE_ENV,
