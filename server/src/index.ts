@@ -75,20 +75,21 @@ app.get('/api/health', async (req: Request, res: Response) => {
     });
 });
 
-// Ensure DB is connected for every request AFTER health check
-app.use(dbCheck);
+// Ensure DB is connected for every request AFTER health check - REMOVED GLOBAL USAGE
+// app.use(dbCheck);
 
 // Serve static files (processed videos)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/outputs', express.static(path.join(__dirname, '../outputs')));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/processing', processingRoutes);
+// Apply dbCheck explicitly to routes that need it
+app.use('/api/auth', dbCheck, authRoutes);
+app.use('/api/projects', projectRoutes); // dbCheck handled internally for granular control
+app.use('/api/processing', dbCheck, processingRoutes);
 
 app.use('/api/webhooks', webhookRoutes);
-app.use('/api/admin', adminAuth, adminRoutes);
+app.use('/api/admin', dbCheck, adminAuth, adminRoutes);
 
 // Export app for Vercel
 export default app;

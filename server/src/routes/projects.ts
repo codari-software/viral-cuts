@@ -9,8 +9,38 @@ import fs from 'fs';
 
 const router = Router();
 
-// All routes require authentication
+// All routes require authentication (JWT only, no DB access needed yet)
 router.use(authMiddleware);
+
+// Generate Cloudinary Upload Signature - NO DB REQUIRED
+// This must be defined BEFORE any dbCheck middleware
+router.get('/upload-signature', async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (!process.env.CLOUDINARY_API_SECRET) {
+            throw new Error('CLOUDINARY_API_SECRET is not defined in environment variables');
+        }
+
+        const timestamp = Math.round((new Date).getTime() / 1000);
+        const signature = cloudinaryService.generateSignature(timestamp);
+
+        res.json({
+            timestamp,
+            signature,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            apiKey: process.env.CLOUDINARY_API_KEY
+        });
+    } catch (error: any) {
+        console.error('Signature generation error:', error);
+        res.status(500).json({
+            error: `Signature generation failed: ${error.message || error}`,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// Import dbCheck to apply it to subsequent routes
+import { dbCheck } from '../middleware/dbCheck';
+router.use(dbCheck);
 
 // Get all projects for current user
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
@@ -75,7 +105,7 @@ router.post('/', checkShortsLimit, async (req: AuthRequest, res: Response): Prom
     }
 });
 
-// Upload video to project (Legacy - kept for small files if needed, but client-side is preferred)
+// Upload video to project (Legacy)
 router.post('/:id/upload', upload.single('video'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const project = await projectModel.findById(req.params.id);
@@ -122,27 +152,6 @@ router.post('/:id/upload', upload.single('video'), async (req: AuthRequest, res:
         console.error('Upload error:', error);
         if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) { } // Try to cleanup
         res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Generate Cloudinary Upload Signature
-router.get('/upload-signature', async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-        const timestamp = Math.round((new Date).getTime() / 1000);
-        const signature = cloudinaryService.generateSignature(timestamp);
-
-        res.json({
-            timestamp,
-            signature,
-            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-            apiKey: process.env.CLOUDINARY_API_KEY
-        });
-    } catch (error: any) {
-        console.error('Signature generation error:', error);
-        res.status(500).json({
-            error: `Signature generation failed: ${error.message || error}`,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
     }
 });
 
