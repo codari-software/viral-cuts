@@ -77,7 +77,7 @@ export class FFmpegProcessor {
         if (!project || !project.videoUrl) throw new Error('Project or video not found');
 
         const inputPath = await this.downloadToTemp(project.videoUrl, projectId);
-        const outputPath = path.join('temp', `${projectId}-no-silence.mp4`);
+        const outputPath = path.join(os.tmpdir(), `${projectId}-no-silence.mp4`);
 
         return new Promise((resolve, reject) => {
             projectModel.update(projectId, { status: 'processing', processingProgress: 0 });
@@ -140,7 +140,7 @@ export class FFmpegProcessor {
         if (!project || !project.videoUrl) throw new Error('Project or video not found');
 
         const inputPath = await this.downloadToTemp(project.videoUrl, projectId);
-        const outputPath = path.join('temp', `${projectId}-9-16.mp4`);
+        const outputPath = path.join(os.tmpdir(), `${projectId}-9-16.mp4`);
 
         return new Promise((resolve, reject) => {
             projectModel.update(projectId, { status: 'processing', processingProgress: 0 });
@@ -225,7 +225,7 @@ export class FFmpegProcessor {
         if (!project || !project.videoUrl) throw new Error('Project or video not found');
 
         const inputPath = await this.downloadToTemp(project.videoUrl, projectId);
-        const outputPath = path.join('temp', `${projectId}-speed-${speed}x.mp4`); // Temp output
+        const outputPath = path.join(os.tmpdir(), `${projectId}-speed-${speed}x.mp4`); // Temp output
 
         // setpts = 1/speed * PTS (video)
         // atempo = speed (audio)
@@ -298,7 +298,7 @@ export class FFmpegProcessor {
         if (!project || !project.videoUrl) throw new Error('Project or video not found');
 
         const inputPath = await this.downloadToTemp(project.videoUrl, projectId);
-        const outputPath = path.join('temp', `${projectId}-trim-${Date.now()}.mp4`);
+        const outputPath = path.join(os.tmpdir(), `${projectId}-trim-${Date.now()}.mp4`);
 
         return new Promise((resolve, reject) => {
             ffmpeg(inputPath)
