@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    /* White */
+    --foreground: 10 10 10;
+    /* Almost Black */
+    --surface: 245 245 245;
+    /* Light Gray */
+    --surface-hover: 229 229 229;
+    --border: 229 229 229;
+    /* Light Border */
+    --primary: 139 92 246;
+    /* Violet-500 */
+    --primary-foreground: 255 255 255;
+
+    /* Semantic names mapping */
+    --card: 255 255 255;
+    --card-foreground: 10 10 10;
+    --popover: 255 255 255;
+    --popover-foreground: 10 10 10;
+    --muted: 245 245 245;
+    --muted-foreground: 115 115 115;
+    --accent: 240 240 240;
+    /* Slightly darker than surface for visibility */
+    --accent-foreground: 24 24 27;
+    --ring: 139 92 246;
+  }
+
+  .dark {
+    --background: 10 10 10;
+    /* Almost Black */
+    --foreground: 255 255 255;
+    /* White */
+    --surface: 31 31 31;
+    /* Dark Gray */
+    --surface-hover: 45 45 45;
+    --border: 50 50 50;
+    /* Dark Border */
+    --primary: 139 92 246;
+    /* Violet-500 */
+    --primary-foreground: 255 255 255;
+
+    /* Semantic names mapping */
+    --card: 10 10 10;
+    --card-foreground: 255 255 255;
+    --popover: 10 10 10;
+    --popover-foreground: 255 255 255;
+    --muted: 31 31 31;
+    --muted-foreground: 163 163 163;
+    --accent: 31 31 31;
+    --accent-foreground: 255 255 255;
+    --ring: 139 92 246;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased font-sans transition-colors duration-300;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+
+  /* Utility for glass effect that adapts */
+  .glass {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 dark:bg-black/5 dark:border-white/10;
+  }
+
+  .glass-card {
+    @apply bg-surface/50 backdrop-blur-md border border-border/50 rounded-xl;
+  }
+}
